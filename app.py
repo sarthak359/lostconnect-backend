@@ -124,6 +124,28 @@ def create_app():
             except Exception as e:
                 db.session.rollback()
                 return jsonify({'error': str(e)}), 500
+    @app.route('/users', methods=['POST'])
+    def create_user():
+        data = request.get_json()
+        user_id = data.get("id")
+        email = data.get("email")
+    
+        if not user_id or not email:
+            return jsonify({'error': 'User ID and email are required'}), 400
+    
+        # Check if user already exists
+        existing_user = User.query.get(user_id)
+        if existing_user:
+            return jsonify({'message': 'User already exists'}), 200
+    
+        try:
+            new_user = User(id=user_id, email=email)
+            db.session.add(new_user)
+            db.session.commit()
+            return jsonify({'message': 'User created successfully'}), 201
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
 
     return app
 
