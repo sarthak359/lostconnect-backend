@@ -8,7 +8,6 @@ class User(db.Model):
     phone = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     projects = db.relationship('Project', backref='user', lazy=True)
-    likes = db.relationship('Like', backref='user', lazy=True)
 
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -21,19 +20,3 @@ class Project(db.Model):
     image_url = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.String, db.ForeignKey('user.id'))
-
-    likes = db.relationship('Like', backref='project', lazy=True)
-    comments = db.relationship('Comment', backref='project', lazy=True)
-
-class Like(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String, db.ForeignKey('user.id'))
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
-    __table_args__ = (db.UniqueConstraint('user_id', 'project_id', name='unique_like'),)
-
-class Comment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.String, db.ForeignKey('user.id'))
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
