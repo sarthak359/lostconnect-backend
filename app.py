@@ -87,7 +87,7 @@ def create_app():
                     'lat': project.lat,
                     'lng': project.lng,
                     'user_id': project.user_id,
-                    'created_at': project.created_at.isoformat() if project.created_at else None
+                    'created_at': project.date.isoformat() if project.date else None
                 })
             return jsonify(projects_list)
 
@@ -129,15 +129,15 @@ def create_app():
         data = request.get_json()
         user_id = data.get("id")
         email = data.get("email")
-    
+
         if not user_id or not email:
             return jsonify({'error': 'User ID and email are required'}), 400
-    
+
         # Check if user already exists
         existing_user = User.query.get(user_id)
         if existing_user:
             return jsonify({'message': 'User already exists'}), 200
-    
+
         try:
             new_user = User(id=user_id, email=email)
             db.session.add(new_user)
