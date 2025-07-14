@@ -178,6 +178,12 @@ def create_app():
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
+    @app.route("/run-backfill")
+    def run_backfill():
+        from backfill_names import backfill_user_names
+        backfill_user_names()
+        return "Backfill complete!"
+
     return app
 
 
