@@ -96,7 +96,7 @@ def create_app():
                     'created_at': project.date.isoformat() if project.date else None,
                     'creator': {
                     'id': project.user.id if project.user else None,
-                    'name': project.user.name if project.user and project.user.name else "Unknown",
+                    'name': project.user.name if project.user else "Unknown",
                     'email': project.user.email if project.user else "Unknown"
                 }
                 })
@@ -178,11 +178,49 @@ def create_app():
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
-    @app.route("/run-backfill")
+    @app.route("/run-backfill", methods=["GET"])
     def run_backfill():
-        from backfill_names import backfill_user_names
-        backfill_user_names()
-        return "Backfill complete!"
+        import os
+        import requests
+        from sqlalchemy import select, update
+        from database import db
+        from model import User
+        from dotenv import load_dotenv
+
+        load_dotenv()
+        CLERK_API_KEY = os.getenv("CLERK_SECRET_KEY")
+        CLERK_API_URL = "https://api.clerk.com/v1"
+
+        def get_clerk_user_name(user_id):
+            headers = {
+                "Authorization": f"Bearer {CLERK_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            url = f"{CLERK_API_URL}/users/{user_id}"
+            try:
+                response = requests.get(url, headers=headers)
+                response.raise_for_status()
+                data = response.json()
+                return f"{data.get('first_name', '')} {data.get('last_name', '')}".strip() or "Unknown"
+            except:
+                return None
+
+        try:
+            users_to_update = db.session.execute(
+                select(User).where(User.name == 'Unknown')
+            ).scalars().all()
+
+            for user in users_to_update:
+                real_name = get_clerk_user_name(user.id)
+                if real_name and real_name != "Unknown":
+                    db.session.execute(
+                        update(User).where(User.id == user.id).values(name=real_name)
+                    )
+            db.session.commit()
+            return "Backfill complete ✅"
+        except Exception as e:
+            return f"Error: {str(e)}", 500
+
 
     return app
 

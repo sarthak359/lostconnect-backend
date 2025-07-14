@@ -10,8 +10,8 @@ from model import User
 load_dotenv()
 
 # --- Configuration ---
-DATABASE_URL = os.getenv("DATABASE_URL")
-CLERK_API_KEY = os.getenv("CLERK_SECRET_KEY") # Make sure this is your Clerk B2B Secret Key
+DATABASE_URL = os.environ.get("DATABASE_URL")
+CLERK_API_KEY = os.environ.get("CLERK_SECRET_KEY") # Make sure this is your Clerk B2B Secret Key
 CLERK_API_URL = "https://api.clerk.com/v1"
 
 if not DATABASE_URL or not CLERK_API_KEY:
