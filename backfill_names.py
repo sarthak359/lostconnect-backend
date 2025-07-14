@@ -3,8 +3,8 @@ import requests
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, select, update
 from sqlalchemy.orm import sessionmaker
+from model import User
 
-from model import Base, User
 
 # Load environment variables from .env file
 load_dotenv()
