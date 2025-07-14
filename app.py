@@ -114,9 +114,27 @@ def create_app():
             # Check if user exists, create if not
             user = User.query.filter_by(id=user_id).first()
             if not user:
-                # Now we save the name along with the email
-                new_user = User(id=user_id, email=user_email, name=user_name)
+                # Try fetching name from Clerk
+                import requests
+                clerk_api_key = os.getenv("CLERK_SECRET_KEY")
+                headers = {
+                    "Authorization": f"Bearer {clerk_api_key}",
+                    "Content-Type": "application/json"
+                }
+                url = f"https://api.clerk.com/v1/users/{user_id}"
+                try:
+                    response = requests.get(url, headers=headers)
+                    response.raise_for_status()
+                    clerk_data = response.json()
+                    first_name = clerk_data.get("first_name", "")
+                    last_name = clerk_data.get("last_name", "")
+                    full_name = f"{first_name} {last_name}".strip() or user_name or "Unknown"
+                except:
+                    full_name = user_name or "Unknown"
+            
+                new_user = User(id=user_id, email=user_email, name=full_name)
                 db.session.add(new_user)
+                db.session.commit()         
 
             title = data.get('title')
             description = data.get('description')
@@ -148,6 +166,8 @@ def create_app():
                 return jsonify({'error': str(e)}), 500
     @app.route('/users', methods=['POST'])
     def create_user():
+        import requests
+
         data = request.get_json()
         user_id = data.get("id")
         email = data.get("email")
@@ -160,8 +180,26 @@ def create_app():
         if existing_user:
             return jsonify({'message': 'User already exists'}), 200
 
+        # Fetch name from Clerk if not provided
+        clerk_api_key = os.getenv("CLERK_SECRET_KEY")
+        headers = {
+            "Authorization": f"Bearer {clerk_api_key}",
+            "Content-Type": "application/json"
+        }
+        url = f"https://api.clerk.com/v1/users/{user_id}"
+
         try:
-            new_user = User(id=user_id, email=email)
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            clerk_data = response.json()
+            first_name = clerk_data.get("first_name", "")
+            last_name = clerk_data.get("last_name", "")
+            full_name = f"{first_name} {last_name}".strip() or "Unknown"
+        except Exception as e:
+            full_name = "Unknown"
+
+        try:
+            new_user = User(id=user_id, email=email, name=full_name)
             db.session.add(new_user)
             db.session.commit()
             return jsonify({'message': 'User created successfully'}), 201
