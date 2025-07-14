@@ -90,7 +90,7 @@ def create_app():
                     'created_at': project.date.isoformat() if project.date else None,
                     'creator': {
                     'id': project.user.id if project.user else None,
-                    'name': project.user.name if project.user and project.user.name else "Anonymous",
+                    'name': project.user.name if project.user and project.user.name else "Unknown",
                     'email': project.user.email if project.user else "Unknown"
                 }
                 })
@@ -152,7 +152,6 @@ def create_app():
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
-    return app
     @app.route('/projects/delete-all', methods=['POST'])
     def delete_all_projects():
         try:
@@ -162,6 +161,7 @@ def create_app():
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
+    return app
 
 
 
