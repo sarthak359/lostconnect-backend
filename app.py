@@ -52,16 +52,21 @@ def create_app():
         if event_type in ["user.created", "user.updated"]:
             user_data = event.get("data")
             user_id = user_data.get("id")
+            name = user_data.get("first_name", "") + " " + user_data.get("last_name", "")
             email_addresses = user_data.get("email_addresses", [])
             email = email_addresses[0]['email_address'] if email_addresses else None
+            phone = user_data.get("primary_phone_number", {}).get("phone_number", "")
 
             user = User.query.filter_by(id=user_id).first()
             if not user:
-                new_user = User(id=user_id, email=email)
+                new_user = User(id=user_id, name=name, email=email, phone=phone)
                 db.session.add(new_user)
             else:
+                user.name = name
                 user.email = email
+                user.phone = phone
             db.session.commit()
+
 
         elif event_type == "user.deleted":
             user_id = event.get("data", {}).get("id")
