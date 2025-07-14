@@ -52,19 +52,20 @@ def create_app():
         if event_type in ["user.created", "user.updated"]:
             user_data = event.get("data")
             user_id = user_data.get("id")
-            name = user_data.get("first_name", "") + " " + user_data.get("last_name", "")
             email_addresses = user_data.get("email_addresses", [])
             email = email_addresses[0]['email_address'] if email_addresses else None
-            phone = user_data.get("primary_phone_number", {}).get("phone_number", "")
+            # Get first and last names from the webhook data
+            first_name = user_data.get("first_name", "")
+            last_name = user_data.get("last_name", "")
+            full_name = f"{first_name} {last_name}".strip()
 
             user = User.query.filter_by(id=user_id).first()
             if not user:
-                new_user = User(id=user_id, name=name, email=email, phone=phone)
+                new_user = User(id=user_id, email=email, name=full_name)
                 db.session.add(new_user)
             else:
-                user.name = name
                 user.email = email
-                user.phone = phone
+                user.name = full_name # <-- Update the name on updates too
             db.session.commit()
 
 
@@ -107,12 +108,14 @@ def create_app():
                 return jsonify({'error': 'Invalid JSON data'}), 400
 
             user_id = data.get('user_id')
-            user_email = data.get('user_email') # Get the email from the request
+            user_email = data.get('user_email')
+            user_name = data.get('user_name') # <-- Get the name from the request
 
             # Check if user exists, create if not
             user = User.query.filter_by(id=user_id).first()
             if not user:
-                new_user = User(id=user_id, email=user_email)
+                # Now we save the name along with the email
+                new_user = User(id=user_id, email=user_email, name=user_name)
                 db.session.add(new_user)
 
             title = data.get('title')
