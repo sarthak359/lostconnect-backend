@@ -87,7 +87,12 @@ def create_app():
                     'lat': project.lat,
                     'lng': project.lng,
                     'user_id': project.user_id,
-                    'created_at': project.date.isoformat() if project.date else None
+                    'created_at': project.date.isoformat() if project.date else None,
+                    'creator': {
+                    'id': project.user.id if project.user else None,
+                    'name': project.user.name if project.user and project.user.name else "Anonymous",
+                    'email': project.user.email if project.user else "Unknown"
+                }
                 })
             return jsonify(projects_list)
 
@@ -148,6 +153,16 @@ def create_app():
             return jsonify({'error': str(e)}), 500
 
     return app
+    @app.route('/projects/delete-all', methods=['POST'])
+    def delete_all_projects():
+        try:
+            num_deleted = Project.query.delete()
+            db.session.commit()
+            return jsonify({'message': f'{num_deleted} projects deleted'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
 
 
 if __name__ == "__main__":
