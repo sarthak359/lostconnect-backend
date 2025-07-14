@@ -106,6 +106,15 @@ def create_app():
             if not data:
                 return jsonify({'error': 'Invalid JSON data'}), 400
 
+            user_id = data.get('user_id')
+            user_email = data.get('user_email') # Get the email from the request
+
+            # Check if user exists, create if not
+            user = User.query.filter_by(id=user_id).first()
+            if not user:
+                new_user = User(id=user_id, email=user_email)
+                db.session.add(new_user)
+
             title = data.get('title')
             description = data.get('description')
             category = data.get('category')
