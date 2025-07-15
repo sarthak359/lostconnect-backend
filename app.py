@@ -135,11 +135,18 @@ def create_app():
 
             # Check if user exists, create if not
             user = User.query.filter_by(id=user_id).first()
+            full_name = user_name or get_clerk_user_name(user_id)
+
             if not user:
-                full_name = user_name or get_clerk_user_name(user_id)
-                new_user = User(id=user_id, email=user_email, name=full_name)
-                db.session.add(new_user)
+                user = User(id=user_id, email=user_email, name=full_name)
+                db.session.add(user)
                 db.session.commit()
+            else:
+                # Fix: update name if it's missing or incorrect
+                if (not user.name or user.name == "Unknown") and full_name:
+                    user.name = full_name
+                    db.session.commit()
+
             if user and user_name and user.name != user_name:
                 user.name = user_name
                 db.session.commit()
