@@ -9,6 +9,28 @@ import hashlib
 import base64
 
 load_dotenv()
+CLERK_API_KEY = os.getenv("CLERK_SECRET_KEY")
+CLERK_API_URL = "https://api.clerk.com/v1"
+
+def get_clerk_user_name(user_id):
+    headers = {
+        "Authorization": f"Bearer {CLERK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    url = f"{CLERK_API_URL}/users/{user_id}"
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        first_name = data.get("first_name", "")
+        last_name = data.get("last_name", "")
+        username = data.get("username", "")
+        full_name = f"{first_name} {last_name}".strip() or username or "Unknown"
+        return full_name
+    except Exception as e:
+        print(f"Clerk fetch error: {e}")
+        return "Unknown"
+
 
 def create_app():
     app = Flask(__name__)
@@ -114,27 +136,14 @@ def create_app():
             # Check if user exists, create if not
             user = User.query.filter_by(id=user_id).first()
             if not user:
-                # Try fetching name from Clerk
-                import requests
-                clerk_api_key = os.getenv("CLERK_SECRET_KEY")
-                headers = {
-                    "Authorization": f"Bearer {clerk_api_key}",
-                    "Content-Type": "application/json"
-                }
-                url = f"https://api.clerk.com/v1/users/{user_id}"
-                try:
-                    response = requests.get(url, headers=headers)
-                    response.raise_for_status()
-                    clerk_data = response.json()
-                    first_name = clerk_data.get("first_name", "")
-                    last_name = clerk_data.get("last_name", "")
-                    full_name = f"{first_name} {last_name}".strip() or user_name or "Unknown"
-                except:
-                    full_name = user_name or "Unknown"
-            
+                full_name = user_name or get_clerk_user_name(user_id)
                 new_user = User(id=user_id, email=user_email, name=full_name)
                 db.session.add(new_user)
-                db.session.commit()         
+                db.session.commit()
+            if user and user_name and user.name != user_name:
+                user.name = user_name
+                db.session.commit()
+
 
             title = data.get('title')
             description = data.get('description')
@@ -199,10 +208,11 @@ def create_app():
             full_name = "Unknown"
 
         try:
+            full_name = get_clerk_user_name(user_id)
             new_user = User(id=user_id, email=email, name=full_name)
             db.session.add(new_user)
             db.session.commit()
-            return jsonify({'message': 'User created successfully'}), 201
+            return jsonify({'message': 'User created successfully', 'id': new_user.id, 'name': new_user.name, 'email': new_user.email}), 201
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
