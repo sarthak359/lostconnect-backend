@@ -39,7 +39,11 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
     # Enable CORS for frontend access
-    CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}},
+    CORS(app, resources={r"/*": {"origins": [
+    "http://localhost:5173",  # ✅ local dev
+    "https://lostconnect-frontend.vercel.app",  # ✅ your Vercel production domain
+    "https://lostconnect-frontend-hkynh7yvh-sarthak359s-projects.vercel.app"  # ✅ optional preview link
+]}},
          supports_credentials=True,
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          allow_headers=["Content-Type", "Authorization"])
